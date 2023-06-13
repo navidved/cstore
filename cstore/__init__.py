@@ -1,2 +1,2 @@
 def do():
-    return (u'just a test for Navid!')
+    return (u'Latest Test for Navid!')
