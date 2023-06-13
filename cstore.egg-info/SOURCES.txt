@@ -1,3 +1,5 @@
+LICENSE
+README.md
 setup.py
 cstore/__init__.py
 cstore.egg-info/PKG-INFO
