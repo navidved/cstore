@@ -1,2 +1,2 @@
-def do():
-    return (u'Latest Test for Navid!')
+def run():
+    return (u'Command Store')
