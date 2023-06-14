@@ -1,9 +1,0 @@
-LICENSE
-README.md
-setup.py
-cstore/__init__.py
-cstore.egg-info/PKG-INFO
-cstore.egg-info/SOURCES.txt
-cstore.egg-info/dependency_links.txt
-cstore.egg-info/not-zip-safe
-cstore.egg-info/top_level.txt
