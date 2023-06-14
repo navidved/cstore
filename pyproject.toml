@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "rich"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cstore"
+version = "0.1.0"
+authors = [
+  { name="Navid Arabi", email="navidved@gmail.com" },
+]
+description = "A tools to store and recall useful commands, specifically created to assist forgetful individuals"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/navidved/ctore"
+"Bug Tracker" = "https://github.com/navidved/ctore/issues"
