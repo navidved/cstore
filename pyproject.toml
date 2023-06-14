@@ -4,7 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cstore"
-version = "0.1.0"
+version = "0.3.2"
+dependencies = [
+    "typer",
+]
 authors = [
   { name="Navid Arabi", email="navidved@gmail.com" },
 ]
@@ -20,3 +23,7 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/navidved/ctore"
 "Bug Tracker" = "https://github.com/navidved/ctore/issues"
+
+
+[project.scripts]
+cstore = "cstore.cli:app"
