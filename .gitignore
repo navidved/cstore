@@ -1,5 +1,9 @@
+# vscode setting
+.vscode/
+
 # Compiled python modules.
 *.pyc
+build/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
