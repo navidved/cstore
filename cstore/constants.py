@@ -6,6 +6,16 @@ class ActionsEnum(Enum):
     modify = "modify"
     filter = "filter"
     
-actions_enum = ActionsEnum()
+    
+# class EntiryEnum(Enum):
+#     command = "command"
+#     group = "group"
+#     tag = "tag"
+    
+actions_enum = ActionsEnum
+# entities_enum = EntiryEnum()
+
+
+
     
     

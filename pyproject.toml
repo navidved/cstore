@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cstore"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
     "typer[all]",
     "rich",
     "simple_term_menu",
-    "sqlalchemy"
+    "SQLAlchemy"
 ]
 authors = [
   { name="Navid Arabi", email="navidved@gmail.com" },
@@ -29,4 +29,4 @@ classifiers = [
 
 
 [project.scripts]
-cst = "cstore.cli:run_main"
+cstore = "cstore.cli:app"
