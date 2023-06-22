@@ -1,12 +1,16 @@
+from typing import List
+from sqlalchemy import or_
+
 import schemes as schemes
-from models import Command
+from models import Command, Tag
 from database import LocalSession
+
 
 class RepoCommand:
     def __init__(self) -> None:
         self.db = LocalSession()
-    
-    def create(self ,command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> Command:
+
+    def create(self, command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> Command:
         db_command = Command(**command_data.dict())
         self.db.add(db_command)
         self.db.commit()
@@ -14,9 +18,44 @@ class RepoCommand:
         self.db.close()
         return db_command
 
-
-    def get_by_id(self ,command_id: int) -> Command:
-        result = self.db.query(Command).filter(Command.id == command_id).first()
+    def get_by_id(self, command_id: int) -> Command:
+        result = self.db.query(Command).filter(
+            Command.id == command_id).first()
         self.db.close()
         return result
 
+    def search_and_filter(self,
+                          entities: schemes.EntitiesSchema
+                          ) -> List[schemes.CommandSchemaBase] | None:
+        result = None
+        query_object = None
+
+        if entities.command or entities.group or entities.tags:
+            query_object = self.db.query(Command)
+
+        if entities.command:
+            command_query = "%" + entities.command.body + "%"
+            description_query = "%" + entities.command.body + "%"
+            query_object = query_object.filter(or_(Command.body.like(command_query),
+                                                   Command.description.like(description_query)))
+
+        if entities.group:
+            from repo.repo_group import RepoGroup
+            group_object = RepoGroup().get_by_name(entities.group.name)
+            if group_object:
+                query_object = query_object.filter(
+                    Command.group_id == group_object.id)
+
+        if entities.tags:
+            tags_names = []
+            for tag in entities.tags:
+                tags_names.append(tag.name)
+
+            if len(tags_names):
+                query_object = query_object.filter(
+                    Command.tags.any(Tag.name.in_(tags_names)))
+
+        if query_object:
+            result = query_object.all()
+
+        return result

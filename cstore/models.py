@@ -17,7 +17,7 @@ class Group(DcBase):
 class Command(DcBase):
     __tablename__ = "commands"
     id = Column(Integer, primary_key=True, index=True)
-    body = Column(String(500))
+    body = Column(String(1000))
     description = Column(String(1000), nullable=True)
     group_order = Column(Integer)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)

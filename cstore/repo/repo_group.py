@@ -27,8 +27,10 @@ class RepoGroup:
         return result
 
 
-    def get_or_create(self ,group_data: schemes.GroupSchemaBase) -> Group:
+    def get_or_create(self ,group_data: schemes.GroupSchemaBase) -> any:
+        is_new_group = False
         group = self.get_by_name(group_data.name)
         if not group:
             group = self.create(group_data)
-        return group
+            is_new_group = True
+        return group, is_new_group
