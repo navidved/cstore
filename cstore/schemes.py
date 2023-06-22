@@ -1,15 +1,30 @@
-from typing import Optional
+from pydantic import ValidationError, validator
+from typing import Optional, List
 from pydantic import BaseModel, Field
+
+
+def should_not_contain_any_space(cls, v, field_name: str):
+        if ' ' in v:
+            raise ValueError(f"There should not be any space in the {field_name}")
+        return v
 
 
 class TagSchemaBase(BaseModel):
     name: str = Field(min_length=3, max_length=30)
+    
+    @validator('name')
+    def description_should_not_contain_any_space(cls, v):
+        return should_not_contain_any_space(cls, v, 'tag name')
 
 
 class GroupSchemaBase(BaseModel):
     name: str = Field(min_length=3, max_length=100)
     description: Optional[str] = Field(max_length=1000, default=None)
     is_secret: Optional[bool]
+    
+    @validator('name')
+    def name_should_not_contain_any_space(cls, v):
+        return should_not_contain_any_space(cls, v, 'group name')
 
 
 class GroupReadSchema(GroupSchemaBase):
@@ -32,7 +47,7 @@ class TagDBSchema(TagSchemaBase):
         orm_mode = True
 
 
-class CommandCreateWithGroupSchema(CommandSchemaBase):
+class CommandCreateWithGroupAndTagsSchema(CommandSchemaBase):
     group_id: Optional[int]
     tags: Optional[list[TagSchemaBase]] = []
 
@@ -54,8 +69,7 @@ class GroupDBSchema(GroupSchemaBase):
     class Config:
         orm_mode = True
 
-
 class EntitiesSchema(BaseModel):
     command: Optional[CommandSchemaBase]
     group: Optional[GroupSchemaBase]
-    tag: Optional[TagSchemaBase]
+    tags: Optional[List[TagSchemaBase]]

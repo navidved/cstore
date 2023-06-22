@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
-from cstore.database import DcBase
+from database import DcBase
 
 
 
@@ -31,7 +31,6 @@ class Tag(DcBase):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(30), unique=True)
     commands = relationship("Command", secondary="commands_tags", back_populates="tags")
-
 
 
 class CommandTag(DcBase):

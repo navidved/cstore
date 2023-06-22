@@ -1,12 +1,12 @@
-import cstore.schemes as schemes
-from cstore.models import Command
-from cstore.database import LocalSession
+import schemes as schemes
+from models import Command
+from database import LocalSession
 
 class RepoCommand:
     def __init__(self) -> None:
         self.db = LocalSession()
     
-    def create(self ,command_data: schemes.CommandSchemaBase) -> Command:
+    def create(self ,command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> Command:
         db_command = Command(**command_data.dict())
         self.db.add(db_command)
         self.db.commit()

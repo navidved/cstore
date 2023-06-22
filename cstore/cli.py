@@ -1,27 +1,102 @@
-from typing import Optional
+from os.path import exists
+from typing import Optional, List
 from typing_extensions import Annotated
 from rich.console import Console
-from typer import Typer, Option, Exit, Argument, Context
+from typer import Typer, Option, Exit, Context
 from rich.prompt import Prompt
+from rich import print
 
-from cstore.models import DcBase
-from cstore.schemes import CommandSchemaBase, EntitiesSchema, GroupSchemaBase, TagSchemaBase
-from cstore.action_handler import ActionFactory
-from cstore.database import engine
-from cstore.constants import actions_enum
+from models import DcBase, Group, Command, Tag
+import schemes as schemes
+from database import engine
+from constants import actions_enum, ActionsEnum
+from repo.repo_group import RepoGroup
+from repo.repo_command import RepoCommand
 
 
-__version__ = "0.3.6"
+
+__version__ = "0.3.7"
+db_path = "cstore_sqlite.db"
 state = {"verbose": False}
-defult_action = actions_enum.add.value
+defult_action = actions_enum.filter
 app = Typer()
 console = Console()
-DcBase.metadata.create_all(bind=engine)
+
+
+def startup() -> None:
+    if not exists(db_path):
+        DcBase.metadata.create_all(bind=engine)
+
+
+class BaseAction:
+    def __init__(self, entities: schemes.EntitiesSchema) -> None:
+        self.entities = entities
+
+    def execute(self):
+        pass
+
+
+class ConcreteFilterAction(BaseAction):
+    def execute(self):
+        print("_search_")
+
+
+class ConcreteAddAction(BaseAction):
+    def execute(self):
+        group: Group = None
+        command: Command = None
+        tags: list[Tag] = []
+        
+        if self.entities.group != None:
+            group = RepoGroup().get_or_create(self.entities.group)
+            
+        if self.entities.tags != []:
+            for tag in self.entities.tags:
+                tags.append()
+            
+        if self.entities.command != None:
+            command_schema = schemes.CommandCreateWithGroupAndTagsSchema(**self.entities.command)
+            if group:
+                command_schema.group_id = group.id
+            command = RepoCommand().create(command_schema)
+
+            
+        print(command)
+
+
+class ConcreteDeleteAction(BaseAction):
+    def execute(self):
+        print("_remove_")
+
+
+class ConcreteModifyAction(BaseAction):
+    def execute(self):
+        print("_edit_")
+
+
+class ActionFactory:
+    def __init__(self, entities: schemes.EntitiesSchema) -> None:
+        self.entities = entities
+        pass
+
+    def create_action(self, action_type: ActionsEnum):
+        match action_type:
+            case actions_enum.filter:
+                return ConcreteFilterAction(entities=self.entities)
+            case actions_enum.add:
+                return ConcreteAddAction(entities=self.entities)
+            case actions_enum.delete:
+                return ConcreteDeleteAction(entities=self.entities)
+            case actions_enum.modify:
+                return ConcreteModifyAction(entities=self.entities)
+            case _:
+                print(f"Invalid Action")
+                raise Exit()
 
 
 def version_callback(value: bool):
     if value:
-        print(f"CStore Version: {__version__}")
+        print(f"Command Store (cstore) Version: {__version__}")
         raise Exit()
 
 
@@ -83,14 +158,16 @@ def main(
         Optional[str], Option(
             "-g", "--group", help="Group entity")
     ] = None,
-    tag: Annotated[
-        Optional[str], Option(
+    tags: Annotated[
+        Optional[List[str]], Option(
             "-t", "--tag", help="Tag entity")
-    ] = None,
+    ] = [],
 ):
     """
     Main Method Help
     """
+    startup()
+    
     if verbose:
         print("verbose activated!")
         state["verbose"] = True
@@ -106,16 +183,19 @@ def main(
             command=command,
             description=description,
             group=group,
-            tag=tag,
+            tags=tags,
             is_secret=secret)
-        
-        if entities:
-            print(activated_action)
-            print(entities)
-        else:
-            name = Prompt.ask("Enter someting to search :sunglasses:")
 
-        # ActionFactory(entities=entities).create_action(activated_action).execute()
+        if not entities:
+            input_prompt = Prompt.ask("enter someting to search :boom:")
+            entities = schemes.EntitiesSchema(
+                command= schemes.CommandSchemaBase(
+                    description=description,
+                    is_secret=secret,
+                    body=input_prompt
+                ))
+            
+        ActionFactory(entities=entities).create_action(activated_action).execute()
 
 
 def get_activated_action(**actions) -> str:
@@ -123,34 +203,37 @@ def get_activated_action(**actions) -> str:
     if true_actions_count == 0:
         return defult_action
     elif true_actions_count == 1:
-        return next(action_name for action_name, action_value in actions.items() if action_value)
+        return actions_enum(next(action_name for action_name, action_value in actions.items() if action_value))
     else:
         print(f"Only one of add, delete and modify actions can be used in each command")
         raise Exit()
 
 
-def validate_entities(command: str, description: str, group: str, tag: str, is_secret: bool) -> EntitiesSchema:
-    comman_entity = CommandSchemaBase(
+def validate_entities(command: str, description: str, group: str, tags: list[str], is_secret: bool) -> schemes.EntitiesSchema:
+    comman_entity = schemes.CommandSchemaBase(
         body=command,
         description=description,
         is_secret=is_secret
     ) if command else None
-
-    group_entity = GroupSchemaBase(
+    
+    if command:
+        description = None
+        
+    group_entity = schemes.GroupSchemaBase(
         name=group,
         description=description,
         is_secret=is_secret
     ) if group else None
 
-    tag_entity = TagSchemaBase(
-        name=tag
-    ) if tag else None
+    tag_list_entity: list[str] = []
+    for tag in tags:
+        tag_list_entity.append(schemes.TagSchemaBase(name=tag))
 
-    if comman_entity or group_entity or tag_entity:
-        return EntitiesSchema(
+    if comman_entity or group_entity or tag_list_entity:
+        return schemes.EntitiesSchema(
             command=comman_entity,
             group=group_entity,
-            tag=tag_entity
+            tags=tag_list_entity
         )
     else:
         return None

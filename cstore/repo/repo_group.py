@@ -1,6 +1,6 @@
-import cstore.schemes as schemes
-from cstore.models import Group
-from cstore.database import LocalSession
+import schemes as schemes
+from models import Group
+from database import LocalSession
 
 class RepoGroup:
     def __init__(self) -> None:
