@@ -26,7 +26,7 @@ class RepoCommand:
 
     def search_and_filter(self,
                           entities: schemes.EntitiesSchema
-                          ) -> List[schemes.CommandSchemaBase] | None:
+                          ) -> List[Command] | None:
         result = None
         query_object = None
 
@@ -36,8 +36,8 @@ class RepoCommand:
         if entities.command:
             command_query = "%" + entities.command.body + "%"
             description_query = "%" + entities.command.body + "%"
-            query_object = query_object.filter(or_(Command.body.like(command_query),
-                                                   Command.description.like(description_query)))
+            query_object = query_object.filter(or_(Command.body.ilike(command_query),
+                                                   Command.description.ilike(description_query)))
 
         if entities.group:
             from repo.repo_group import RepoGroup

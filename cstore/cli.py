@@ -5,6 +5,7 @@ from rich.console import Console
 from typer import Typer, Option, Exit, Context
 from rich.prompt import Prompt
 from rich import print
+from simple_term_menu import TerminalMenu
 
 from models import DcBase, Group, Command, Tag
 import schemes as schemes
@@ -47,6 +48,18 @@ def verbose_action(verbose_kind, **data):
                         f"tag '{data['tag_obj'].name}' loaded. (id={data['tag_obj'].id})")
 
 
+def print_search_result(search_result: List[Command]) -> None:
+    menu_list = [] #["[a] apple", "[b] banana", "[o] orange"]
+    for item in search_result:
+        menu_item = f"[{item.id}] {item.body}"
+        if item.description:
+            menu_item += f" | {item.description}"
+        menu_list.append(menu_item)
+    terminal_menu = TerminalMenu(menu_list, title="search results")
+    menu_entry_index = terminal_menu.show()
+    print(f"command {menu_entry_index} was copied!")
+
+
 class BaseAction:
     def __init__(self, entities: schemes.EntitiesSchema) -> None:
         self.entities = entities
@@ -58,7 +71,9 @@ class BaseAction:
 class ConcreteFilterAction(BaseAction):
     def execute(self):
         result = RepoCommand().search_and_filter(self.entities)
-        pass
+        if not result:
+            print("Oops! Nothing was found!")
+        print_search_result(result)
 
 
 class ConcreteAddAction(BaseAction):
