@@ -1,3 +1,4 @@
+import json
 from os.path import exists
 from typing import Optional, List
 from typing_extensions import Annotated
@@ -16,7 +17,7 @@ from repo.repo_command import RepoCommand
 from repo.repo_tag import RepoTag
 
 
-__version__ = "0.3.7"
+__version__ = "0.4.0"
 db_path = "cstore_sqlite.db"
 state = {"verbose": False}
 defult_action = actions_enum.filter
@@ -49,7 +50,7 @@ def verbose_action(verbose_kind, **data):
 
 
 def print_search_result(search_result: List[Command]) -> None:
-    menu_list = [] #["[a] apple", "[b] banana", "[o] orange"]
+    menu_list = []
     for item in search_result:
         menu_item = f"[{item.id}] {item.body}"
         if item.description:
@@ -149,10 +150,31 @@ def export_db_to_json():
     print("Export")
 
 
-# TODO: we need import command to import a group of commands or all commands
 @app.command("import")
-def import_from_json_to_db():
-    print("Import")
+def import_from_json_to_db(json_path: Annotated[
+        str, Option("--path", help="json file path to import")]):
+
+    if not exists(json_path):
+        print(f"this path is invalid.")
+        raise Exit()
+
+    try:
+        with open(json_path, "r") as json_file:
+            dict_data = json.load(json_file)
+            for dict_item in dict_data:
+                import_data(dict_item)
+
+    except ValueError:
+        print(f"this is not json file.")
+        raise Exit()
+
+
+def import_data(dict_item: dict):
+    # try load schems validation (group, command, tags)
+    # repo load ,update or create (group, tags)
+    # repo update or create commands
+    # print total updated , created of real total
+    pass
 
 
 # TODO: we need flush command to clean and fresh db
@@ -249,7 +271,7 @@ def get_activated_action(**actions) -> str:
     elif true_actions_count == 1:
         return actions_enum(next(action_name for action_name, action_value in actions.items() if action_value))
     else:
-        print(f"Only one of add, delete and modify actions can be used in each command")
+        print(f"only one of add, delete and modify actions can be used in each command")
         raise Exit()
 
 
@@ -285,3 +307,20 @@ def validate_entities(command: str, description: str, group: str, tags: list[str
 
 if __name__ == "__main__":
     app()
+    
+    
+# TODO Tasks :
+# 1. import => 2h
+# 2. flush_db => 1h
+# 3. delete action => 2h
+# 4. modify action => 2h
+# 5. export => 2h
+# 6. verbose move to new class and complated => 1h
+# 7. prety print_search => 1h
+# 8. ignore case sensetive => 1h
+# 9. code comments and docstrings => 2h
+# 10. github readme and help => 2h
+# 11. pypi github and help => 1h
+# 12. linkedin post => 1h
+# ------------------------------
+# sum : 18h => 4h per day => 4.5 days (7tir)
