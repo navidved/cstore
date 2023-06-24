@@ -10,7 +10,8 @@ dependencies = [
     "typer[all]",
     "rich",
     "simple_term_menu",
-    "SQLAlchemy"
+    "SQLAlchemy",
+    "pyperclip"
 ]
 authors = [
   { name="Navid Arabi", email="navidved@gmail.com" },

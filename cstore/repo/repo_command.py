@@ -23,6 +23,21 @@ class RepoCommand:
             Command.id == command_id).first()
         self.db.close()
         return result
+    
+    def get_by_body(self, command_body:str) -> Command:
+        result = self.db.query(Command).filter(
+            Command.body == command_body
+        ).first()
+        self.db.close()
+        return result
+    
+    def get_or_create(self, command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> any:
+        is_new_command = False
+        command = self.get_by_body(command_data.body)
+        if not command:
+            command = self.create(command_data)
+            is_new_command = True
+        return command, is_new_command
 
     def search_and_filter(self,
                           entities: schemes.EntitiesSchema

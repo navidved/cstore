@@ -7,6 +7,8 @@ from typer import Typer, Option, Exit, Context
 from rich.prompt import Prompt
 from rich import print
 from simple_term_menu import TerminalMenu
+import pyperclip
+
 
 from models import DcBase, Group, Command, Tag
 import schemes as schemes
@@ -54,11 +56,12 @@ def print_search_result(search_result: List[Command]) -> None:
     for item in search_result:
         menu_item = f"[{item.id}] {item.body}"
         if item.description:
-            menu_item += f" | {item.description}"
+            menu_item += f" ({item.description})"
         menu_list.append(menu_item)
     terminal_menu = TerminalMenu(menu_list, title="search results")
     menu_entry_index = terminal_menu.show()
-    print(f"command {menu_entry_index} was copied!")
+    pyperclip.copy(search_result[menu_entry_index].body)
+    print(f"command id {search_result[menu_entry_index].id} copied to clipboard!")
 
 
 class BaseAction:
@@ -74,6 +77,7 @@ class ConcreteFilterAction(BaseAction):
         result = RepoCommand().search_and_filter(self.entities)
         if not result:
             print("Oops! Nothing was found!")
+            raise Exit()
         print_search_result(result)
 
 
@@ -163,6 +167,7 @@ def import_from_json_to_db(json_path: Annotated[
             dict_data = json.load(json_file)
             for dict_item in dict_data:
                 import_data(dict_item)
+            print("import done!")
 
     except ValueError:
         print(f"this is not json file.")
@@ -170,12 +175,56 @@ def import_from_json_to_db(json_path: Annotated[
 
 
 def import_data(dict_item: dict):
-    # try load schems validation (group, command, tags)
-    # repo load ,update or create (group, tags)
-    # repo update or create commands
-    # print total updated , created of real total
-    pass
+    if "body" in dict_item:
+        command = None
+        group = None
+        tags = []
 
+        group_db = None
+        tags_db = []
+
+        try:
+            if "group" in dict_item:
+                group = schemes.GroupSchemaBase(
+                    name=dict_item["group"]
+                )
+
+            if "tags" in dict_item and isinstance(dict_item["tags"], list):
+                for tag_item in dict_item["tags"]:
+                    tags.append(schemes.TagSchemaBase(name=tag_item))
+
+            if group:
+                group_db, is_new_group = RepoGroup().get_or_create(group)
+
+            if len(tags) >= 1:
+                tags_db = []
+                for tag in tags:
+                    tag_db, is_new_tag = RepoTag().get_or_create(tag)
+                    tags_db.append(tag_db)
+
+            command = schemes.CommandCreateWithGroupAndTagsSchema(
+                body=dict_item["body"],
+                description=dict_item["description"] if "description" in dict_item else None,
+            )
+            
+            if group_db:
+                command.group_id = group_db.id
+
+            if tags_db:
+                command.tags = tags_db
+                
+            command_db, is_new_command = RepoCommand().get_or_create(command)
+            
+            if not is_new_command:
+                print(f"command exist. (id:{command_db.id})")
+            else:
+                print(f"new command created. (id:{command_db.id})")
+
+        except Exception as e:
+            print(f"commands not imported: {dict_item['body']} | error: {e}")
+    else:
+        print("commands body is required.")
+    
 
 # TODO: we need flush command to clean and fresh db
 @app.command("flush")
@@ -307,8 +356,8 @@ def validate_entities(command: str, description: str, group: str, tags: list[str
 
 if __name__ == "__main__":
     app()
-    
-    
+
+
 # TODO Tasks :
 # 1. import => 2h
 # 2. flush_db => 1h
@@ -322,5 +371,9 @@ if __name__ == "__main__":
 # 10. github readme and help => 2h
 # 11. pypi github and help => 1h
 # 12. linkedin post => 1h
+# 13. copy command to clipbord => 1
+# 14. print all tags and groups (copyable) => 1
+# 15 make a json file for grouped commands 
+# 16 change group structure to achive grouping problem
 # ------------------------------
-# sum : 18h => 4h per day => 4.5 days (7tir)
+# sum : 20h => 4h per day => 5 days (8tir)

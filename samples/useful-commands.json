@@ -3,295 +3,289 @@
       "group": "File Management",
       "body": "ls",
       "description": "List directory contents",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "cd",
       "description": "Change directory",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "pwd",
       "description": "Print working directory",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "cp",
       "description": "Copy files and directories",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "mv",
       "description": "Move or rename files and directories",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "rm",
       "description": "Remove files and directories",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "mkdir",
       "description": "Create directories",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "File Management",
       "body": "touch",
       "description": "Change file timestamps",
-      "labels": ["File"]
+      "tags": ["File"]
     },
     {
       "group": "Process Management",
       "body": "ps",
       "description": "Report process status",
-      "labels": ["Process"]
+      "tags": ["Process"]
     },
     {
       "group": "Process Management",
       "body": "top",
       "description": "Monitor system processes",
-      "labels": ["Process", "Monitor"]
+      "tags": ["Process", "Monitor"]
     },
     {
       "group": "Process Management",
       "body": "kill",
       "description": "Terminate processes",
-      "labels": ["Process"]
+      "tags": ["Process"]
     },
     {
       "group": "Package Management",
       "body": "apt-get",
       "description": "Debian package handling utility",
-      "labels": ["Debian"]
+      "tags": ["Debian"]
     },
     {
       "group": "Package Management",
       "body": "yum",
       "description": "RPM package manager",
-      "labels": ["RPM", "YUM"]
+      "tags": ["RPM", "YUM"]
     },
     {
       "group": "Text Processing",
       "body": "grep",
       "description": "Search text patterns",
-      "labels": ["Text", "Search", "Filter"]
+      "tags": ["Text", "Search", "Filter", "Logging"]
     },
     {
       "group": "Text Processing",
       "body": "sed",
       "description": "Stream editor for text transformation",
-      "labels": ["Text", "Stream"]
+      "tags": ["Text", "Stream"]
     },
     {
       "group": "Text Processing",
       "body": "awk",
       "description": "Pattern scanning and processing language",
-      "labels": ["Text"]
+      "tags": ["Text"]
     },
     {
       "group": "Disk Management",
       "body": "fdisk",
       "description": "Manipulate disk partition table",
-      "labels": ["Disk", "Partition"]
+      "tags": ["Disk", "Partition"]
     },
     {
       "group": "Disk Management",
       "body": "mkfs",
       "description": "Create a file system",
-      "labels": ["Disk", "File System"]
+      "tags": ["Disk", "FileSystem"]
     },
     {
       "group": "Disk Management",
       "body": "mount",
       "description": "Mount a file system",
-      "labels": ["Disk", "File System"]
+      "tags": ["Disk", "FileSystem"]
     },
     {
       "group": "Disk Management",
       "body": "umount",
       "description": "Unmount a file system",
-      "labels": ["Disk", "File System"]
+      "tags": ["Disk", "FileSystem"]
     },
     {
       "group": "Permission Management",
       "body": "chmod",
       "description": "Change file permissions",
-      "labels": ["Permission"]
+      "tags": ["Permission"]
     },
     {
       "group": "Permission Management",
       "body": "chown",
       "description": "Change file ownership",
-      "labels": ["Permission", "Ownership"]
+      "tags": ["Permission", "Ownership"]
     },
     {
       "group": "Permission Management",
       "body": "chgrp",
       "description": "Change group ownership",
-      "labels": ["Permission", "Ownership"]
+      "tags": ["Permission", "Ownership"]
     },
     {
       "group": "System Monitoring",
       "body": "htop",
       "description": "Interactive process viewer",
-      "labels": ["Process", "Monitor"]
+      "tags": ["Process", "Monitor"]
     },
     {
       "group": "System Monitoring",
       "body": "iostat",
       "description": "Report CPU and I/O statistics",
-      "labels": ["Process", "Monitor"]
+      "tags": ["Process", "Monitor"]
     },
     {
       "group": "System Monitoring",
       "body": "sar",
       "description": "System activity reporter",
-      "labels": ["Process", "Monitor"]
+      "tags": ["Process", "Monitor"]
     },
     {
       "group": "Networking",
       "body": "ifconfig",
       "description": "Configure network interfaces",
-      "labels": ["Network"]
+      "tags": ["Network"]
     },
     {
       "group": "Networking",
       "body": "ping",
       "description": "Send ICMP ECHO_REQUEST to network hosts",
-      "labels": ["Network"]
+      "tags": ["Network"]
     },
     {
       "group": "Networking",
       "body": "netstat",
       "description": "Network statistics",
-      "labels": ["Network"]
+      "tags": ["Network"]
     },
     {
       "group": "Logging",
       "body": "tail",
       "description": "Output the last part of files",
-      "labels": ["Logging"]
+      "tags": ["Logging"]
     },
     {
-      "group": "Logging",
-      "body": "grep",
-      "description": "Search text patterns",
-      "labels": ["Text", "Search", "Filter"]
-    },
-    {
-      "group": "MTA (Mail Transfer Agent)",
+      "group": "MTA",
       "body": "sendmail",
       "description": "Send email using SMTP",
-      "labels": ["MTA"]
+      "tags": ["MTA"]
     },
     {
-      "group": "MTA (Mail Transfer Agent)",
+      "group": "MTA",
       "body": "postfix",
       "description": "SMTP server",
-      "labels": ["MTA"]
+      "tags": ["MTA"]
     },
     {
       "group": "Printer Management",
       "body": "lp",
       "description": "Print files",
-      "labels": ["Printer"]
+      "tags": ["Printer"]
     },
     {
       "group": "Printer Management",
       "body": "cups",
       "description": "Common Unix Printing System",
-      "labels": ["Printer"]
+      "tags": ["Printer"]
     },
     {
-      "group": "DNS (Domain Name System)",
+      "group": "DNS",
       "body": "dig",
       "description": "DNS lookup utility",
-      "labels": ["DNS"]
+      "tags": ["DNS"]
     },
     {
-      "group": "DNS (Domain Name System)",
+      "group": "DNS",
       "body": "nslookup",
       "description": "Query Internet name servers",
-      "labels": ["DNS"]
+      "tags": ["DNS"]
     },
     {
       "group": "Security",
       "body": "iptables",
       "description": "Administration tool for IPv4 packet filtering and NAT",
-      "labels": ["Security"]
+      "tags": ["Security"]
     },
     {
       "group": "Security",
       "body": "ssh",
       "description": "Secure shell client",
-      "labels": ["Security"]
+      "tags": ["Security"]
     },
     {
       "group": "Encryption",
       "body": "gpg",
       "description": "Encrypt and sign files",
-      "labels": ["Security", "Encryption"]
+      "tags": ["Security", "Encryption"]
     },
     {
       "group": "User Management",
       "body": "useradd",
       "description": "Create a new user or update default new user information",
-      "labels": ["User"]
+      "tags": ["User"]
     },
     {
       "group": "User Management",
       "body": "usermod",
       "description": "Modify user account",
-      "labels": ["User"]
+      "tags": ["User"]
     },
     {
       "group": "Time Management",
       "body": "date",
       "description": "Display or set the system date and time",
-      "labels": ["Time"]
+      "tags": ["Time"]
     },
     {
       "group": "Time Management",
       "body": "timedatectl",
       "description": "Control the system time and date",
-      "labels": ["Time"]
+      "tags": ["Time"]
     },
     {
       "group": "Localisation",
       "body": "locale",
       "description": "Get or set the current locale",
-      "labels": ["Localisation"]
+      "tags": ["Localisation"]
     },
     {
       "group": "Logging",
       "body": "syslog",
       "description": "System logging utility",
-      "labels": ["Logging"]
+      "tags": ["Logging"]
     },
     {
       "group": "Graphical Interface",
       "body": "startx",
       "description": "Initialize X session",
-      "labels": ["Graphical", "Desktop"]
+      "tags": ["Graphical", "Desktop"]
     },
     {
       "group": "Graphical Interface",
       "body": "gnome-control-center",
       "description": "Gnome Control Center",
-      "labels": ["Graphical", "Desktop"]
+      "tags": ["Graphical", "Desktop"]
     },
     {
       "group": "Accessibility",
       "body": "brltty",
       "description": "Braille display driver",
-      "labels": ["Accessibility"]
+      "tags": ["Accessibility"]
     }
   ]
   
