@@ -1,8 +1,8 @@
 from typing import List
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 
 import schemes as schemes
-from models import Command, Tag
+from models import Command, Tag, CommandTag
 from database import LocalSession
 
 
@@ -38,6 +38,24 @@ class RepoCommand:
             command = self.create(command_data)
             is_new_command = True
         return command, is_new_command
+
+    def remove_tag(self, command_id: int, tag_id: int):
+        self.db.query(CommandTag).filter(
+            and_(CommandTag.command_id == command_id, CommandTag.tag_id == tag_id)).delete()
+        self.db.commit()
+        self.db.close()
+
+    def add_tag(self, command_id: int, tag_id: int):
+        db_commandTag = CommandTag(command_id=command_id, tag_id=tag_id)
+        self.db.add(db_commandTag)
+        self.db.commit()
+        self.db.close()
+
+    def remove(self, command_id: int):
+        self.db.query(Command).filter(
+            Command.id == command_id).delete()
+        self.db.commit()
+        self.db.close()
 
     def search_and_filter(self,
                           entities: schemes.EntitiesSchema

@@ -1,29 +1,40 @@
+import os
 import json
-from os.path import exists
 from typing import Optional, List
 from typing_extensions import Annotated
+from os.path import exists
+import pyperclip
 from rich.console import Console
-from typer import Typer, Option, Exit, Context
 from rich.prompt import Prompt
 from rich import print
+from typer import Typer, Option, Exit, Context, confirm, Abort, prompt
 from simple_term_menu import TerminalMenu
-import pyperclip
+import cryptocode
 
 
-from models import DcBase, Command, Tag
 import schemes as schemes
+from models import DcBase, Command, Tag
 from database import engine
 from constants import actions_enum, ActionsEnum
 from repo.repo_command import RepoCommand
 from repo.repo_tag import RepoTag
+from verbose import Verbose
 
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 db_path = "cstore_sqlite.db"
 state = {"verbose": False}
 defult_action = actions_enum.filter
 app = Typer()
 console = Console()
+verbose_manager = Verbose()
+
+
+def gen_fernet_key(passcode:bytes) -> bytes:
+    assert isinstance(passcode, bytes)
+    hlib = hashlib.md5()
+    hlib.update(passcode)
+    return base64.urlsafe_b64encode(hlib.hexdigest().encode('latin-1'))
 
 
 def startup() -> None:
@@ -31,30 +42,15 @@ def startup() -> None:
         DcBase.metadata.create_all(bind=engine)
 
 
-def verbose_action(verbose_kind, **data):
-    if state['verbose']:
-        match verbose_kind:
-            case "tag":
-                if data["is_new_tag"]:
-                    print(
-                        f"tag '{data['tag_obj'].name}' created. (id={data['tag_obj'].id})")
-                else:
-                    print(
-                        f"tag '{data['tag_obj'].name}' loaded. (id={data['tag_obj'].id})")
-
-
-def print_search_result(search_result: List[Command]) -> None:
+def print_search_result(search_result: List[Command]) -> int:
     menu_list = []
     for item in search_result:
-        menu_item = f"[{item.id}] {item.body}"
-        if item.description:
+        menu_item = item.body
+        if item.description and not item.is_secret:
             menu_item += f" ({item.description})"
         menu_list.append(menu_item)
     terminal_menu = TerminalMenu(menu_list, title="search results")
-    menu_entry_index = terminal_menu.show()
-    pyperclip.copy(search_result[menu_entry_index].body)
-    print(
-        f"command id {search_result[menu_entry_index].id} copied to clipboard!")
+    return terminal_menu.show()
 
 
 class BaseAction:
@@ -67,11 +63,31 @@ class BaseAction:
 
 class ConcreteFilterAction(BaseAction):
     def execute(self):
+        selected_index = 0
         result = RepoCommand().search_and_filter(self.entities)
+        
         if not result:
-            print("oops! nothing found.")
+            print("Oops! nothing found.")
             raise Exit()
-        print_search_result(result)
+        
+        if len(result) > 1:
+            selected_index = print_search_result(result)
+            
+        if selected_index >= 0:
+            selected_command = result[selected_index]
+            
+            if selected_command.is_secret:
+                password = prompt(f"please enter a password to decrypt '{selected_command.body}'", hide_input=True)
+                decrypted_command = cryptocode.decrypt(selected_command.description,password)
+                if not decrypted_command:
+                    print("invalid password!")
+                    raise Exit()
+                
+                pyperclip.copy(decrypted_command)                        
+            else:
+                pyperclip.copy(selected_command.body)
+            print(
+                f"Command id {selected_command.id} copied to clipboard!")
 
 
 class ConcreteAddAction(BaseAction):
@@ -79,32 +95,122 @@ class ConcreteAddAction(BaseAction):
         command: Command = None
         tags: list[Tag] = []
 
-        if self.entities.tags != []:
-            for tag in self.entities.tags:
-                tag_obj, is_new_tag = RepoTag().get_or_create(tag)
-                verbose_action(verbose_kind="tag",
-                               tag_obj=tag_obj, is_new_tag=is_new_tag)
-                tags.append(tag_obj)
-
         if self.entities.command != None:
+            if self.entities.command.is_secret:
+                if self.entities.command.description:
+                    print("It is not possible to enter description for the secret mode, write it into command")
+                    raise Exit() 
+                
+                secret_command = prompt("please enter a your secrect command", hide_input=True)
+                password = prompt("please enter a password to encryption (don't forget it!)", hide_input=True)
+                encrypted_command = cryptocode.encrypt(secret_command, password)
+                self.entities.command.description = encrypted_command
+                
+            if self.entities.tags != []:
+                for tag in self.entities.tags:
+                    tag_obj, is_new_tag = RepoTag().get_or_create(tag)
+                    verbose_manager.action(verbose_kind="tag", state=state,
+                                        tag_obj=tag_obj, is_new_tag=is_new_tag)
+                    tags.append(tag_obj)
+            
             command_schema = schemes.CommandCreateWithTagsSchema(
                 **self.entities.command.__dict__)
 
             if tags:
                 command_schema.tags = tags
 
-            command = RepoCommand().create(command_schema)
-            print(f"new command added. (id={command.id})")
+            command, is_new_command = RepoCommand().get_or_create(command_schema)
+            if is_new_command:
+                print(f"New command added. (id={command.id})")
+            else:
+                current_tags = []
+                for ctag in command.tags:
+                    current_tags.append(ctag.name)
+
+                for tag_item in tags:
+                    if tag_item.name not in current_tags:
+                        RepoCommand().add_tag(command.id, tag_item.id)
 
 
 class ConcreteDeleteAction(BaseAction):
     def execute(self):
-        print("_remove_")
+        if self.entities.command:
+            result = RepoCommand().search_and_filter(self.entities)
+            if not result:
+                print("Oops! nothing found.")
+                raise Exit()
+            selected_index = print_search_result(result)
+            if selected_index >= 0:
+                command_id = result[selected_index].id
+                if self.entities.tags:
+                    delete_ok = confirm(
+                        "Are you sure you want to delete commands tags?")
+                    if not delete_ok:
+                        raise Abort()
+                    else:
+                        for tag in self.entities.tags:
+                            tag_db = RepoTag().get_by_name(tag.name)
+                            if not tag_db:
+                                print(f"Tag '{tag.name}' not found")
+                            else:
+                                RepoCommand().remove_tag(command_id=command_id, tag_id=tag_db.id)
+                                print(f"Commands tag {tag_db.name} deleted!")
+                else:
+                    delete_ok = confirm(
+                        f"Are you sure you want to delete {result[selected_index].body} command?")
+                    if not delete_ok:
+                        raise Abort()
+                    else:
+                        for command_tag_item in result[selected_index].tags:
+                            RepoCommand().remove_tag(command_id, command_tag_item.id)
+                        RepoCommand().remove(command_id)
+                        print("Command deleted.")
+        else:
+            if self.entities.tags:
+                delete_ok = confirm(
+                    "Are you sure you want to delete all commands related to tags?")
+                if not delete_ok:
+                    raise Abort()
+                else:
+                    for tag in self.entities.tags:
+                        tag_db = RepoTag().get_by_name(tag.name)
+                        if not tag_db:
+                            print(f"Tag '{tag.name}' not found")
+                        else:
+                            for command_item in tag_db.commands:
+                                RepoCommand().remove_tag(command_item.id, tag_db.id)
+                                RepoCommand().remove(command_item.id)
+                            RepoTag().remove(tag_db.id)
+                            print("All commands related to tags removed.")
 
 
-class ConcreteModifyAction(BaseAction):
+class ConcreteShowAction(BaseAction):
     def execute(self):
-        print("_edit_")
+        if self.entities.command:
+            result = RepoCommand().search_and_filter(self.entities)
+            if not result:
+                print("Oops! nothing found.")
+                raise Exit()
+            if len(result) > 1:
+                selected_index = print_search_result(result)
+            else:
+                selected_index = 0
+
+            if selected_index >= 0:
+                command = result[selected_index]
+                if command.is_secret:
+                    print("[bold red]it's a secret command, unable to show it![/bold red]")
+                else:
+                    print(f"[bold cyan]id[/bold cyan]: {command.id}")
+                    print(f"[bold cyan]command body[/bold cyan]: {command.body}")
+                    print(
+                        f"[bold cyan]description[/bold cyan]: {command.description}")
+                    tags_str = ""
+                    for tag in command.tags:
+                        if tags_str != "":
+                            tags_str += ", "
+                        tags_str += f"{tag.name}"
+                    print(f"[bold cyan]tags[/bold cyan]: {tags_str}")
 
 
 class ActionFactory:
@@ -120,23 +226,19 @@ class ActionFactory:
                 return ConcreteAddAction(entities=self.entities)
             case actions_enum.delete:
                 return ConcreteDeleteAction(entities=self.entities)
-            case actions_enum.modify:
-                return ConcreteModifyAction(entities=self.entities)
+            # case actions_enum.modify:
+            #     return ConcreteModifyAction(entities=self.entities)
+            case actions_enum.show:
+                return ConcreteShowAction(entities=self.entities)
             case _:
-                print(f"invalid action")
+                print(f"Invalid action")
                 raise Exit()
 
 
 def version_callback(value: bool):
     if value:
-        print(f"command store (cstore) version: {__version__}")
+        print(f"Command store (cstore) version: {__version__}")
         raise Exit()
-
-
-# TODO: we need export all commands
-@app.command("export")
-def export_db_to_json():
-    print("Export")
 
 
 @app.command("import")
@@ -144,7 +246,7 @@ def import_from_json_to_db(json_path: Annotated[
         str, Option("--path", help="json file path to import")]):
 
     if not exists(json_path):
-        print(f"this path is invalid.")
+        print(f"This path is invalid.")
         raise Exit()
 
     try:
@@ -152,10 +254,10 @@ def import_from_json_to_db(json_path: Annotated[
             dict_data = json.load(json_file)
             for dict_item in dict_data:
                 import_data(dict_item)
-            print("import done!")
+            print("Import done!")
 
     except ValueError:
-        print(f"this is not json file.")
+        print(f"This is not json file.")
         raise Exit()
 
 
@@ -187,20 +289,34 @@ def import_data(dict_item: dict):
             command_db, is_new_command = RepoCommand().get_or_create(command)
 
             if not is_new_command:
-                print(f"command exist. (id:{command_db.id})")
+                print(f"Command exist. (id:{command_db.id})")
             else:
-                print(f"new command created. (id:{command_db.id})")
+                print(f"New command created. (id:{command_db.id})")
 
         except Exception as e:
-            print(f"commands not imported: {dict_item['body']} | error: {e}")
+            print(f"Commands not imported: {dict_item['body']} | error: {e}")
     else:
-        print("commands body is required.")
+        print("Commands body is required.")
 
 
-# TODO: we need flush command to clean and fresh db
 @app.command("flush")
 def flush_db():
-    print("Flush")
+    if exists(db_path):
+        os.remove(db_path)
+        print("Database flushed.")
+
+
+@app.command("tags")
+def show_all_tags():
+    all_tags = RepoTag().get_all()
+    menu_list = []
+    for tag_item in all_tags:
+        menu_list.append(tag_item.name)
+    terminal_menu = TerminalMenu(menu_list, title="tags list")
+    selected_index = terminal_menu.show()
+    if selected_index >= 0:
+        selected_tag = all_tags[selected_index].name
+        os.system(f"cstore --tag {selected_tag}")
 
 
 @app.callback(invoke_without_command=True)
@@ -219,9 +335,13 @@ def main(
         Optional[bool], Option(
             "-d", "--delete", help="delete command & tag")
     ] = False,
-    modify: Annotated[
+    # modify: Annotated[
+    #     Optional[bool], Option(
+    #         "-m", "--modify", help="modify command & tag")
+    # ] = False,
+    show: Annotated[
         Optional[bool], Option(
-            "-m", "--modify", help="modify command & tag")
+            "-s", "--show", help="show command & related tags")
     ] = False,
     filter: Annotated[
         Optional[bool], Option(
@@ -250,14 +370,15 @@ def main(
     startup()
 
     if verbose:
-        print("verbose activated!")
+        print("Verbose activated!")
         state["verbose"] = True
 
     if ctx.invoked_subcommand is None:
         activated_action = get_activated_action(
             add=add,
             delete=delete,
-            modify=modify,
+            # modify=modify,
+            show=show,
             filter=filter)
 
         entities = validate_entities(
@@ -265,7 +386,7 @@ def main(
             description=description,
             tags=tags,
             is_secret=secret)
-
+        
         if not entities:
             input_prompt = Prompt.ask("enter someting to search :boom:")
             entities = schemes.EntitiesSchema(
@@ -286,7 +407,7 @@ def get_activated_action(**actions) -> str:
     elif true_actions_count == 1:
         return actions_enum(next(action_name for action_name, action_value in actions.items() if action_value))
     else:
-        print(f"only one of add, delete and modify actions can be used in each command")
+        print(f"Only one of add, delete and show actions can be used in each command")
         raise Exit()
 
 
@@ -313,24 +434,17 @@ def validate_entities(command: str, description: str, tags: list[str], is_secret
         return None
 
 
+# TODO: we need to modify commands and tags
+# class ConcreteModifyAction(BaseAction):
+#     def execute(self):
+#         print("_edit_")
+
+
+# # TODO: we need export all commands
+# @app.command("export")
+# def export_db_to_json():
+#     print("Export")
+
+
 if __name__ == "__main__":
     app()
-
-
-# TODO Tasks :
-# 1. import => 2h
-# 2. flush_db => 1h
-# 3. delete action => 2h
-# 4. modify action => 2h
-# 5. export => 2h
-# 6. verbose move to new class and complated => 1h
-# 7. prety print_search => 1h
-# 8. ignore case sensetive => 1h
-# 9. code comments and docstrings => 2h
-# 10. github readme and help => 2h
-# 11. pypi github and help => 1h
-# 12. linkedin post => 1h
-# 13. copy command to clipbord => 1
-# 17. secret messages => 1
-# ------------------------------
-# sum : 20h => 4h per day => 6 days (9tir)

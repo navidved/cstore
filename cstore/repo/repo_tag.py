@@ -1,3 +1,4 @@
+from typing import List
 import schemes as schemes
 from models import Tag
 from database import LocalSession
@@ -32,3 +33,14 @@ class RepoTag:
             tag = self.create(tag_data)
             is_new_tag = True
         return tag, is_new_tag
+
+    def remove(self, tag_id: int):
+        self.db.query(Tag).filter(
+            Tag.id == tag_id).delete()
+        self.db.commit()
+        self.db.close()
+
+    def get_all(self) -> List[Tag]:
+        result = self.db.query(Tag).all()
+        self.db.close()
+        return result
