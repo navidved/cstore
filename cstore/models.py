@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
-from database import DcBase
+from cstore.database import DcBase
 
 
 class Command(DcBase):

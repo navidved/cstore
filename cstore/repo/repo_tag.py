@@ -1,7 +1,8 @@
 from typing import List
-import schemes as schemes
-from models import Tag
-from database import LocalSession
+
+import cstore.schemes as schemes
+from cstore.models import Tag
+from cstore.database import LocalSession
 
 
 class RepoTag:

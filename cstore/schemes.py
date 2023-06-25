@@ -1,5 +1,4 @@
 from typing import Optional, List
-
 from pydantic import validator, root_validator
 from pydantic import BaseModel, Field
 

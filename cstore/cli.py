@@ -12,16 +12,16 @@ from simple_term_menu import TerminalMenu
 import cryptocode
 
 
-import schemes as schemes
-from models import DcBase, Command, Tag
-from database import engine
-from constants import actions_enum, ActionsEnum
-from repo.repo_command import RepoCommand
-from repo.repo_tag import RepoTag
-from verbose import Verbose
+import cstore.schemes as schemes
+from cstore.models import DcBase, Command, Tag
+from cstore.database import engine
+from cstore.constants import actions_enum, ActionsEnum
+from cstore.repo.repo_command import RepoCommand
+from cstore.repo.repo_tag import RepoTag
+from cstore.verbose import Verbose
 
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 db_path = "cstore_sqlite.db"
 state = {"verbose": False}
 defult_action = actions_enum.filter

@@ -1,9 +1,9 @@
 from typing import List
 from sqlalchemy import and_, or_
 
-import schemes as schemes
-from models import Command, Tag, CommandTag
-from database import LocalSession
+import cstore.schemes as schemes
+from cstore.models import Command, Tag, CommandTag
+from cstore.database import LocalSession
 
 
 class RepoCommand:
