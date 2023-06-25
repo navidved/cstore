@@ -30,13 +30,6 @@ console = Console()
 verbose_manager = Verbose()
 
 
-def gen_fernet_key(passcode:bytes) -> bytes:
-    assert isinstance(passcode, bytes)
-    hlib = hashlib.md5()
-    hlib.update(passcode)
-    return base64.urlsafe_b64encode(hlib.hexdigest().encode('latin-1'))
-
-
 def startup() -> None:
     if not exists(db_path):
         DcBase.metadata.create_all(bind=engine)
@@ -63,27 +56,27 @@ class BaseAction:
 
 class ConcreteFilterAction(BaseAction):
     def execute(self):
-        selected_index = 0
         result = RepoCommand().search_and_filter(self.entities)
-        
+
         if not result:
             print("Oops! nothing found.")
             raise Exit()
-        
-        if len(result) > 1:
-            selected_index = print_search_result(result)
-            
+
+        selected_index = print_search_result(result)
+
         if selected_index >= 0:
             selected_command = result[selected_index]
-            
+
             if selected_command.is_secret:
-                password = prompt(f"please enter a password to decrypt '{selected_command.body}'", hide_input=True)
-                decrypted_command = cryptocode.decrypt(selected_command.description,password)
+                password = prompt(
+                    f"please enter a password to decrypt '{selected_command.body}'", hide_input=True)
+                decrypted_command = cryptocode.decrypt(
+                    selected_command.description, password)
                 if not decrypted_command:
                     print("invalid password!")
                     raise Exit()
-                
-                pyperclip.copy(decrypted_command)                        
+
+                pyperclip.copy(decrypted_command)
             else:
                 pyperclip.copy(selected_command.body)
             print(
@@ -98,21 +91,25 @@ class ConcreteAddAction(BaseAction):
         if self.entities.command != None:
             if self.entities.command.is_secret:
                 if self.entities.command.description:
-                    print("It is not possible to enter description for the secret mode, write it into command")
-                    raise Exit() 
-                
-                secret_command = prompt("please enter a your secrect command", hide_input=True)
-                password = prompt("please enter a password to encryption (don't forget it!)", hide_input=True)
-                encrypted_command = cryptocode.encrypt(secret_command, password)
+                    print(
+                        "It is not possible to enter description for the secret mode, write it into command")
+                    raise Exit()
+
+                secret_command = prompt(
+                    "please enter a your secrect command", hide_input=True)
+                password = prompt(
+                    "please enter a password to encryption (don't forget it!)", hide_input=True)
+                encrypted_command = cryptocode.encrypt(
+                    secret_command, password)
                 self.entities.command.description = encrypted_command
-                
+
             if self.entities.tags != []:
                 for tag in self.entities.tags:
                     tag_obj, is_new_tag = RepoTag().get_or_create(tag)
                     verbose_manager.action(verbose_kind="tag", state=state,
-                                        tag_obj=tag_obj, is_new_tag=is_new_tag)
+                                           tag_obj=tag_obj, is_new_tag=is_new_tag)
                     tags.append(tag_obj)
-            
+
             command_schema = schemes.CommandCreateWithTagsSchema(
                 **self.entities.command.__dict__)
 
@@ -199,10 +196,12 @@ class ConcreteShowAction(BaseAction):
             if selected_index >= 0:
                 command = result[selected_index]
                 if command.is_secret:
-                    print("[bold red]it's a secret command, unable to show it![/bold red]")
+                    print(
+                        "[bold red]it's a secret command, unable to show it![/bold red]")
                 else:
                     print(f"[bold cyan]id[/bold cyan]: {command.id}")
-                    print(f"[bold cyan]command body[/bold cyan]: {command.body}")
+                    print(
+                        f"[bold cyan]command body[/bold cyan]: {command.body}")
                     print(
                         f"[bold cyan]description[/bold cyan]: {command.description}")
                     tags_str = ""
@@ -272,21 +271,21 @@ def import_data(dict_item: dict):
                 for tag_item in dict_item["tags"]:
                     tags.append(schemes.TagSchemaBase(name=tag_item))
 
-            if len(tags) >= 1:
-                tags_db = []
-                for tag in tags:
-                    tag_db, is_new_tag = RepoTag().get_or_create(tag)
-                    tags_db.append(tag_db)
+            for tag in tags:
+                tag_db, is_new_tag = RepoTag().get_or_create(tag)
+                tags_db.append(tag_db)
 
             command = schemes.CommandCreateWithTagsSchema(
                 body=dict_item["body"],
                 description=dict_item["description"] if "description" in dict_item else None,
             )
 
-            if tags_db:
-                command.tags = tags_db
+            # command.tags = tags_db
 
             command_db, is_new_command = RepoCommand().get_or_create(command)
+
+            for tag_item in tags_db:
+                RepoCommand().add_tag(command_db.id, tag_item.id)
 
             if not is_new_command:
                 print(f"Command exist. (id:{command_db.id})")
@@ -301,9 +300,13 @@ def import_data(dict_item: dict):
 
 @app.command("flush")
 def flush_db():
-    if exists(db_path):
-        os.remove(db_path)
-        print("Database flushed.")
+    delete_ok = confirm(f"Are you sure you want to flush database?")
+    if not delete_ok:
+        raise Abort()
+    else:
+        if exists(db_path):
+            os.remove(db_path)
+            print("Database flushed.")
 
 
 @app.command("tags")
@@ -386,7 +389,7 @@ def main(
             description=description,
             tags=tags,
             is_secret=secret)
-        
+
         if not entities:
             input_prompt = Prompt.ask("enter someting to search :boom:")
             entities = schemes.EntitiesSchema(

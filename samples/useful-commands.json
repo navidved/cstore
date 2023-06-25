@@ -1,5 +1,13 @@
 [
   {
+    "body": "mount",
+    "description": "Mount a file system",
+    "tags": [
+      "Disk",
+      "FileSystem"
+    ]
+  },
+  {
     "body": "ls",
     "description": "List directory contents",
     "tags": [
@@ -128,14 +136,6 @@
   {
     "body": "mkfs",
     "description": "Create a file system",
-    "tags": [
-      "Disk",
-      "FileSystem"
-    ]
-  },
-  {
-    "body": "mount",
-    "description": "Mount a file system",
     "tags": [
       "Disk",
       "FileSystem"
