@@ -24,12 +24,11 @@ class RepoTag:
         result = self.db.query(Tag).filter(Tag.name == tag_name).first()
         self.db.close()
         return result
-    
-    def get_or_create(self ,tag_data: schemes.TagSchemaBase) -> any:
+
+    def get_or_create(self, tag_data: schemes.TagSchemaBase) -> any:
         is_new_tag = False
         tag = self.get_by_name(tag_data.name)
         if not tag:
             tag = self.create(tag_data)
             is_new_tag = True
         return tag, is_new_tag
-

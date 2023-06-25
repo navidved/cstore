@@ -10,16 +10,15 @@ from simple_term_menu import TerminalMenu
 import pyperclip
 
 
-from models import DcBase, Group, Command, Tag
+from models import DcBase, Command, Tag
 import schemes as schemes
 from database import engine
 from constants import actions_enum, ActionsEnum
-from repo.repo_group import RepoGroup
 from repo.repo_command import RepoCommand
 from repo.repo_tag import RepoTag
 
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 db_path = "cstore_sqlite.db"
 state = {"verbose": False}
 defult_action = actions_enum.filter
@@ -35,13 +34,6 @@ def startup() -> None:
 def verbose_action(verbose_kind, **data):
     if state['verbose']:
         match verbose_kind:
-            case "group":
-                if data["is_new_group"]:
-                    print(
-                        f"group '{data['group_obj'].name}' created. (id={data['group_obj'].id})")
-                else:
-                    print(
-                        f"group '{data['group_obj'].name}' loaded. (id={data['group_obj'].id})")
             case "tag":
                 if data["is_new_tag"]:
                     print(
@@ -61,7 +53,8 @@ def print_search_result(search_result: List[Command]) -> None:
     terminal_menu = TerminalMenu(menu_list, title="search results")
     menu_entry_index = terminal_menu.show()
     pyperclip.copy(search_result[menu_entry_index].body)
-    print(f"command id {search_result[menu_entry_index].id} copied to clipboard!")
+    print(
+        f"command id {search_result[menu_entry_index].id} copied to clipboard!")
 
 
 class BaseAction:
@@ -76,21 +69,15 @@ class ConcreteFilterAction(BaseAction):
     def execute(self):
         result = RepoCommand().search_and_filter(self.entities)
         if not result:
-            print("Oops! Nothing was found!")
+            print("oops! nothing found.")
             raise Exit()
         print_search_result(result)
 
 
 class ConcreteAddAction(BaseAction):
     def execute(self):
-        group: Group = None
         command: Command = None
         tags: list[Tag] = []
-
-        if self.entities.group != None:
-            group, is_new_group = RepoGroup().get_or_create(self.entities.group)
-            verbose_action(verbose_kind="group", group_obj=group,
-                           is_new_group=is_new_group)
 
         if self.entities.tags != []:
             for tag in self.entities.tags:
@@ -100,10 +87,8 @@ class ConcreteAddAction(BaseAction):
                 tags.append(tag_obj)
 
         if self.entities.command != None:
-            command_schema = schemes.CommandCreateWithGroupAndTagsSchema(
+            command_schema = schemes.CommandCreateWithTagsSchema(
                 **self.entities.command.__dict__)
-            if group:
-                command_schema.group_id = group.id
 
             if tags:
                 command_schema.tags = tags
@@ -138,17 +123,17 @@ class ActionFactory:
             case actions_enum.modify:
                 return ConcreteModifyAction(entities=self.entities)
             case _:
-                print(f"Invalid Action")
+                print(f"invalid action")
                 raise Exit()
 
 
 def version_callback(value: bool):
     if value:
-        print(f"Command Store (cstore) Version: {__version__}")
+        print(f"command store (cstore) version: {__version__}")
         raise Exit()
 
 
-# TODO: we need export command to export a group of commands or all commands
+# TODO: we need export all commands
 @app.command("export")
 def export_db_to_json():
     print("Export")
@@ -177,24 +162,13 @@ def import_from_json_to_db(json_path: Annotated[
 def import_data(dict_item: dict):
     if "body" in dict_item:
         command = None
-        group = None
         tags = []
-
-        group_db = None
         tags_db = []
 
         try:
-            if "group" in dict_item:
-                group = schemes.GroupSchemaBase(
-                    name=dict_item["group"]
-                )
-
             if "tags" in dict_item and isinstance(dict_item["tags"], list):
                 for tag_item in dict_item["tags"]:
                     tags.append(schemes.TagSchemaBase(name=tag_item))
-
-            if group:
-                group_db, is_new_group = RepoGroup().get_or_create(group)
 
             if len(tags) >= 1:
                 tags_db = []
@@ -202,19 +176,16 @@ def import_data(dict_item: dict):
                     tag_db, is_new_tag = RepoTag().get_or_create(tag)
                     tags_db.append(tag_db)
 
-            command = schemes.CommandCreateWithGroupAndTagsSchema(
+            command = schemes.CommandCreateWithTagsSchema(
                 body=dict_item["body"],
                 description=dict_item["description"] if "description" in dict_item else None,
             )
-            
-            if group_db:
-                command.group_id = group_db.id
 
             if tags_db:
                 command.tags = tags_db
-                
+
             command_db, is_new_command = RepoCommand().get_or_create(command)
-            
+
             if not is_new_command:
                 print(f"command exist. (id:{command_db.id})")
             else:
@@ -224,7 +195,7 @@ def import_data(dict_item: dict):
             print(f"commands not imported: {dict_item['body']} | error: {e}")
     else:
         print("commands body is required.")
-    
+
 
 # TODO: we need flush command to clean and fresh db
 @app.command("flush")
@@ -242,35 +213,31 @@ def main(
     ] = None,
     add: Annotated[
         Optional[bool], Option(
-            "-a", "--add", help="Add command, group & tag or a combination of these")
+            "-a", "--add", help="Add command, tag or a combination of these")
     ] = False,
     delete: Annotated[
         Optional[bool], Option(
-            "-d", "--delete", help="delete command, group & tag")
+            "-d", "--delete", help="delete command & tag")
     ] = False,
     modify: Annotated[
         Optional[bool], Option(
-            "-m", "--modify", help="modify command, group & tag")
+            "-m", "--modify", help="modify command & tag")
     ] = False,
     filter: Annotated[
         Optional[bool], Option(
-            "-f", "--filter", help="filter command, group & tag")
+            "-f", "--filter", help="filter command & tag")
     ] = False,
     secret: Annotated[
         Optional[bool], Option(
-            "--secret", help="flag to make secret a command or a group")
+            "--secret", help="flag to make secret a command")
     ] = False,
     description: Annotated[
         Optional[str], Option(
-            "--desc", help="description could be used for commands and groups")
+            "--desc", help="description could be used for commands")
     ] = None,
     command: Annotated[
         Optional[str], Option(
             "-c", "--command", help="Command entity")
-    ] = None,
-    group: Annotated[
-        Optional[str], Option(
-            "-g", "--group", help="Group entity")
     ] = None,
     tags: Annotated[
         Optional[List[str]], Option(
@@ -296,7 +263,6 @@ def main(
         entities = validate_entities(
             command=command,
             description=description,
-            group=group,
             tags=tags,
             is_secret=secret)
 
@@ -324,7 +290,7 @@ def get_activated_action(**actions) -> str:
         raise Exit()
 
 
-def validate_entities(command: str, description: str, group: str, tags: list[str], is_secret: bool) -> schemes.EntitiesSchema:
+def validate_entities(command: str, description: str, tags: list[str], is_secret: bool) -> schemes.EntitiesSchema:
     comman_entity = schemes.CommandSchemaBase(
         body=command,
         description=description,
@@ -334,20 +300,13 @@ def validate_entities(command: str, description: str, group: str, tags: list[str
     if command:
         description = None
 
-    group_entity = schemes.GroupSchemaBase(
-        name=group,
-        description=description,
-        is_secret=is_secret
-    ) if group else None
-
     tag_list_entity: list[str] = []
     for tag in tags:
         tag_list_entity.append(schemes.TagSchemaBase(name=tag))
 
-    if comman_entity or group_entity or tag_list_entity:
+    if comman_entity or tag_list_entity:
         return schemes.EntitiesSchema(
             command=comman_entity,
-            group=group_entity,
             tags=tag_list_entity
         )
     else:
@@ -372,8 +331,6 @@ if __name__ == "__main__":
 # 11. pypi github and help => 1h
 # 12. linkedin post => 1h
 # 13. copy command to clipbord => 1
-# 14. print all tags and groups (copyable) => 1
-# 15 make a json file for grouped commands 
-# 16 change group structure to achive grouping problem
+# 17. secret messages => 1
 # ------------------------------
-# sum : 20h => 4h per day => 5 days (8tir)
+# sum : 20h => 4h per day => 6 days (9tir)

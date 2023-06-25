@@ -10,7 +10,7 @@ class RepoCommand:
     def __init__(self) -> None:
         self.db = LocalSession()
 
-    def create(self, command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> Command:
+    def create(self, command_data: schemes.CommandCreateWithTagsSchema) -> Command:
         db_command = Command(**command_data.dict())
         self.db.add(db_command)
         self.db.commit()
@@ -23,15 +23,15 @@ class RepoCommand:
             Command.id == command_id).first()
         self.db.close()
         return result
-    
-    def get_by_body(self, command_body:str) -> Command:
+
+    def get_by_body(self, command_body: str) -> Command:
         result = self.db.query(Command).filter(
             Command.body == command_body
         ).first()
         self.db.close()
         return result
-    
-    def get_or_create(self, command_data: schemes.CommandCreateWithGroupAndTagsSchema) -> any:
+
+    def get_or_create(self, command_data: schemes.CommandCreateWithTagsSchema) -> any:
         is_new_command = False
         command = self.get_by_body(command_data.body)
         if not command:
@@ -45,7 +45,7 @@ class RepoCommand:
         result = None
         query_object = None
 
-        if entities.command or entities.group or entities.tags:
+        if entities.command or entities.tags:
             query_object = self.db.query(Command)
 
         if entities.command:
@@ -53,13 +53,6 @@ class RepoCommand:
             description_query = "%" + entities.command.body + "%"
             query_object = query_object.filter(or_(Command.body.ilike(command_query),
                                                    Command.description.ilike(description_query)))
-
-        if entities.group:
-            from repo.repo_group import RepoGroup
-            group_object = RepoGroup().get_by_name(entities.group.name)
-            if group_object:
-                query_object = query_object.filter(
-                    Command.group_id == group_object.id)
 
         if entities.tags:
             tags_names = []

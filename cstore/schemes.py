@@ -1,5 +1,6 @@
-from pydantic import ValidationError, validator
 from typing import Optional, List
+
+from pydantic import validator
 from pydantic import BaseModel, Field
 
 
@@ -25,22 +26,6 @@ class TagSchemaBase(BaseModel):
         return to_lowercase(v)
 
 
-class GroupSchemaBase(BaseModel):
-    name: str = Field(min_length=3, max_length=100)
-    is_secret: Optional[bool]
-
-    @validator('name')
-    def change_to_lowercase(cls, v):
-        return to_lowercase(v)
-
-
-class GroupReadSchema(GroupSchemaBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-
 class CommandSchemaBase(BaseModel):
     body: str = Field(min_length=2, max_length=500)
     description: Optional[str] = Field(max_length=1000, default=None)
@@ -58,24 +43,13 @@ class TagDBSchema(TagSchemaBase):
         orm_mode = True
 
 
-class CommandCreateWithGroupAndTagsSchema(CommandSchemaBase):
-    group_id: Optional[int]
+class CommandCreateWithTagsSchema(CommandSchemaBase):
     tags: Optional[list[TagSchemaBase]] = []
 
 
 class CommandDBSchema(CommandSchemaBase):
     id: int
-    group_id: Optional[int]
-    group: Optional[GroupReadSchema]
     tags: Optional[list[TagDBSchema]] = []
-
-    class Config:
-        orm_mode = True
-
-
-class GroupDBSchema(GroupSchemaBase):
-    id: int
-    commands: Optional[list[CommandSchemaBase]] = []
 
     class Config:
         orm_mode = True
@@ -83,5 +57,4 @@ class GroupDBSchema(GroupSchemaBase):
 
 class EntitiesSchema(BaseModel):
     command: Optional[CommandSchemaBase]
-    group: Optional[GroupSchemaBase]
     tags: Optional[List[TagSchemaBase]]
