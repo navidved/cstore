@@ -12,7 +12,7 @@ dependencies = [
     "simple_term_menu",
     "SQLAlchemy",
     "pyperclip",
-    "cryptocode"
+    "cryptocode",
 ]
 authors = [
   { name="Navid Arabi", email="navidved@gmail.com" },

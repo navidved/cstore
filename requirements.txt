@@ -1,0 +1,7 @@
+pydantic
+typer[all]
+rich
+simple_term_menu
+SQLAlchemy
+pyperclip
+cryptocode
