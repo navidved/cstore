@@ -14,15 +14,14 @@ import cryptocode
 
 import cstore.schemes as schemes
 from cstore.models import DcBase, Command, Tag
-from cstore.database import engine
+from cstore.database import engine, db_path
 from cstore.constants import actions_enum, ActionsEnum
 from cstore.repo.repo_command import RepoCommand
 from cstore.repo.repo_tag import RepoTag
 from cstore.verbose import Verbose
 
 
-__version__ = "0.6.1"
-db_path = "cstore_sqlite.db"
+__version__ = "0.6.2"
 state = {"verbose": False}
 defult_action = actions_enum.filter
 app = Typer()
@@ -312,14 +311,23 @@ def flush_db():
 @app.command("tags")
 def show_all_tags():
     all_tags = RepoTag().get_all()
+    if len(all_tags) == 0:
+        print("No tags found!")
+        raise Exit()
+    
     menu_list = []
     for tag_item in all_tags:
         menu_list.append(tag_item.name)
+        
     terminal_menu = TerminalMenu(menu_list, title="tags list")
     selected_index = terminal_menu.show()
-    if selected_index >= 0:
-        selected_tag = all_tags[selected_index].name
-        os.system(f"cstore --tag {selected_tag}")
+    
+    if not selected_index:
+        print("No tag selected.")
+        raise Exit()
+    
+    selected_tag = all_tags[selected_index].name
+    os.system(f"cstore --tag {selected_tag}")
 
 
 @app.callback(invoke_without_command=True)
