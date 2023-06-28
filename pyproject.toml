@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cstore"
-version = "0.6.2"
+version = "0.6.4"
 dependencies = [
     "pydantic",
     "typer[all]",
@@ -27,8 +27,10 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/navidved/ctore"
 "Bug Tracker" = "https://github.com/navidved/ctore/issues"
+"Homepage" = "https://github.com/navidved/ctore"
+"Documentation" = "https://github.com/navidved/ctore"
+"Repository" = "https://github.com/navidved/ctore"
 
 
 [project.scripts]

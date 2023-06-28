@@ -21,7 +21,6 @@ from cstore.repo.repo_tag import RepoTag
 from cstore.verbose import Verbose
 
 
-__version__ = "0.6.2"
 state = {"verbose": False}
 defult_action = actions_enum.filter
 app = Typer()
@@ -140,7 +139,7 @@ class ConcreteDeleteAction(BaseAction):
                 command_id = result[selected_index].id
                 if self.entities.tags:
                     delete_ok = confirm(
-                        "Are you sure you want to delete commands tags?")
+                        "Are you sure you want to delete all commands tags?")
                     if not delete_ok:
                         raise Abort()
                     else:
@@ -234,12 +233,13 @@ class ActionFactory:
 
 
 def version_callback(value: bool):
+    from . import __version__
     if value:
-        print(f"Command store (cstore) version: {__version__}")
+        print(f"CommandStore (cstore) version: {__version__}")
         raise Exit()
 
 
-@app.command("import")
+@app.command("import", help="import list of commands from json file")
 def import_from_json_to_db(json_path: Annotated[
         str, Option("--path", help="json file path to import")]):
 
@@ -297,7 +297,7 @@ def import_data(dict_item: dict):
         print("Commands body is required.")
 
 
-@app.command("flush")
+@app.command("flush", help="delete all stored commands")
 def flush_db():
     delete_ok = confirm(f"Are you sure you want to flush database?")
     if not delete_ok:
@@ -308,7 +308,7 @@ def flush_db():
             print("Database flushed.")
 
 
-@app.command("tags")
+@app.command("tags" ,help="show list of all tags")
 def show_all_tags():
     all_tags = RepoTag().get_all()
     if len(all_tags) == 0:
