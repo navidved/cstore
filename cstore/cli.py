@@ -399,7 +399,7 @@ def main(
             is_secret=secret)
 
         if not entities:
-            input_prompt = Prompt.ask("Please enter a search term:")
+            input_prompt = Prompt.ask("Please enter a search term")
             entities = schemes.EntitiesSchema(
                 command=schemes.CommandSchemaBase(
                     description=description,
