@@ -42,6 +42,6 @@ class RepoTag:
         self.db.close()
 
     def get_all(self) -> List[Tag]:
-        result = self.db.query(Tag).all()
+        result = self.db.query(Tag).order_by(Tag.name).all()
         self.db.close()
         return result

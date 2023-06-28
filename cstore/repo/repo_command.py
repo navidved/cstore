@@ -82,6 +82,6 @@ class RepoCommand:
                     Command.tags.any(Tag.name.in_(tags_names)))
 
         if query_object:
-            result = query_object.all()
+            result = query_object.order_by(Command.body).all()
 
         return result
